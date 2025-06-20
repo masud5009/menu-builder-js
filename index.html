@@ -1,0 +1,250 @@
+<!-- Improved Design: Multilevel Drag & Drop Menu Builder -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+<div class="container-fluid mt-4">
+    <div class="row g-4">
+        <!-- Static Menu -->
+        <div class="col-md-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Static Menu</h5>
+                </div>
+                <ul class="list-group list-group-flush" id="staticMenuList">
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-title="Home"
+                        data-url="/" data-target="_self">
+                        Home
+                        <button class="btn btn-sm btn-primary addToMenu" title="Add to Menu"><i
+                                class="fa fa-plus"></i></button>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-title="About"
+                        data-url="/about" data-target="_self">
+                        About
+                        <button class="btn btn-sm btn-primary addToMenu" title="Add to Menu"><i
+                                class="fa fa-plus"></i></button>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center" data-title="Contact"
+                        data-url="/contact" data-target="_self">
+                        Contact
+                        <button class="btn btn-sm btn-primary addToMenu" title="Add to Menu"><i
+                                class="fa fa-plus"></i></button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Menu Builder (larger col now) -->
+        <div class="col-md-9">
+            <div class="card shadow-sm h-100 d-flex flex-column">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Menu Builder</h5>
+                    <div>
+                        <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#customMenuModal">
+                            <i class="fa fa-plus me-1"></i> Add Custom Menu
+                        </button>
+                        <button class="btn btn-light btn-sm" id="saveMenu" title="Save Menu">
+                            <i class="fa fa-save me-1"></i> Save Menu
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body overflow-auto p-3" style="min-height: 400px;">
+                    <ul id="menuBuilder" class="sortable list-group"></ul>
+                </div>
+                <pre id="output" class="bg-light p-3 m-3 rounded flex-grow-0"
+                    style="max-height: 250px; overflow:auto;"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Custom Menu Modal -->
+<div class="modal fade" id="customMenuModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Add Custom Menu</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="menuTitle" placeholder="Title" class="form-control mb-3" />
+                <input type="text" id="menuUrl" placeholder="URL" class="form-control mb-3" />
+                <select id="menuTarget" class="form-select">
+                    <option value="_self">Same Tab</option>
+                    <option value="_blank">New Tab</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" id="addCustomMenu">
+                    <i class="fa fa-plus me-1"></i> Add
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Menu Modal -->
+<div class="modal fade" id="editMenuModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title">Edit Menu Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editItemId" />
+                <input type="text" id="editTitle" placeholder="Title" class="form-control mb-3" />
+                <input type="text" id="editUrl" placeholder="URL" class="form-control mb-3" />
+                <select id="editTarget" class="form-select">
+                    <option value="_self">Same Tab</option>
+                    <option value="_blank">New Tab</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="updateMenuItem">
+                    <i class="fa fa-edit me-1"></i> Update
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+    function renderMenuItem(title, url, target) {
+        const id = 'id_' + Math.random().toString(36).substr(2, 9);
+        return `<li class="list-group-item menu-item rounded shadow-sm mb-2" data-title="${title}" data-url="${url}" data-target="${target}" id="${id}">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="item-label fw-semibold">${title} <small class="text-muted">(${target})</small></span>
+                <div>
+                  <button class="btn btn-sm btn-outline-secondary edit me-1" data-id="${id}" title="Edit"><i class="fa fa-pen"></i></button>
+                  <button class="btn btn-sm btn-outline-danger remove" title="Remove"><i class="fa fa-trash"></i></button>
+                </div>
+              </div>
+              <ul class="nested list-group mt-2 ps-3"></ul>
+            </li>`;
+    }
+
+    function initSortable(el) {
+        new Sortable(el, {
+            group: 'nested',
+            animation: 150,
+            fallbackOnBody: true,
+            swapThreshold: 0.65,
+            onAdd: function () {
+                $(el).children('li').each(function () {
+                    if (!$(this).children('ul.nested').length) {
+                        $(this).append('<ul class="nested list-group mt-2 ps-3"></ul>');
+                    }
+                    initSortable($(this).children('ul.nested')[0]);
+                });
+            }
+        });
+    }
+
+    $(document).on('click', '.addToMenu', function () {
+        const item = $(this).closest('li');
+        const title = item.data('title');
+        const url = item.data('url');
+        const target = item.data('target');
+        const $newItem = $(renderMenuItem(title, url, target));
+        $('#menuBuilder').append($newItem);
+        initSortable($newItem.find('ul.nested')[0]);
+    });
+
+    $('#addCustomMenu').click(function () {
+        const title = $('#menuTitle').val();
+        const url = $('#menuUrl').val();
+        const target = $('#menuTarget').val();
+        if (title && url) {
+            const $newItem = $(renderMenuItem(title, url, target));
+            $('#menuBuilder').append($newItem);
+            $('#customMenuModal').modal('hide');
+            $('#menuTitle, #menuUrl').val('');
+            initSortable($newItem.find('ul.nested')[0]);
+        }
+    });
+
+    $(document).on('click', '.remove', function () {
+        $(this).closest('li').remove();
+    });
+
+    $(document).on('click', '.edit', function () {
+        const id = $(this).data('id');
+        const item = $('#' + id);
+        $('#editItemId').val(id);
+        $('#editTitle').val(item.data('title'));
+        $('#editUrl').val(item.data('url'));
+        $('#editTarget').val(item.data('target'));
+        $('#editMenuModal').modal('show');
+    });
+
+    $('#updateMenuItem').click(function () {
+        const id = $('#editItemId').val();
+        const title = $('#editTitle').val();
+        const url = $('#editUrl').val();
+        const target = $('#editTarget').val();
+        const item = $('#' + id);
+        item.attr('data-title', title);
+        item.attr('data-url', url);
+        item.attr('data-target', target);
+        item.find('.item-label').html(`${title} <small class="text-muted">(${target})</small>`);
+        $('#editMenuModal').modal('hide');
+    });
+
+    function buildMenuJson($list) {
+        const items = [];
+        $list.children('li').each(function () {
+            const $this = $(this);
+            items.push({
+                title: $this.data('title'),
+                url: $this.data('url'),
+                target: $this.data('target'),
+                children: buildMenuJson($this.children('ul.nested'))
+            });
+        });
+        return items;
+    }
+
+    $('#saveMenu').click(function () {
+        const output = buildMenuJson($('#menuBuilder'));
+        $('#output').text(JSON.stringify(output, null, 4));
+    });
+
+    initSortable(document.getElementById('menuBuilder'));
+</script>
+
+<style>
+    ul#menuBuilder,
+    .nested {
+        min-height: 30px;
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    .menu-item {
+        cursor: grab;
+        background-color: #fff;
+    }
+
+    /* Add subtle hover effect */
+    .menu-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Nested list indentation */
+    ul.nested {
+        padding-left: 1.5rem !important;
+    }
+
+    .custom-menu-container {
+        height: 150px;
+        /* fixed height */
+        overflow: auto;
+    }
+</style>
